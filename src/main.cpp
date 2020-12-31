@@ -4,6 +4,7 @@
 
 #include "types.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
 
 int main(int argc, char *argv[]) {
 	//  Parse arguments
@@ -22,9 +23,8 @@ int main(int argc, char *argv[]) {
 	// Lex file
 	std::vector<Token> tokens = lex(source_file);
 
-	for (auto it = tokens.begin(); it != tokens.end(); it++) {
-		std::cout << (*it).literal << '\n';
-	}
+	// Parse
+	std::unique_ptr<ProgramAST> prg_ast = parse(tokens);
 
 	return 0;
 }
