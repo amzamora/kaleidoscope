@@ -1,6 +1,6 @@
 # Kaleidoscope
 
-Compiler of toy language Kaleidoscope using C++ and LLVM.
+Compiler of toy language [Kaleidoscope](https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/) using C++ and LLVM.
 
 ## Build
 
