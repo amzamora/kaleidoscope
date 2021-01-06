@@ -7,6 +7,13 @@
 std::tuple<std::unique_ptr<FunctionAST>, std::vector<Token>::iterator> parse_function(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
 std::tuple<std::unique_ptr<PrototypeAST>, std::vector<Token>::iterator> parse_prototype(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
 std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_expression(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_bin_op_RHS(std::vector<Token>::iterator it, std::vector<Token>::iterator end, int expr_precedence,  std::unique_ptr<ExprAST> LHS);
+int get_token_precedence(std::vector<Token>::iterator it);
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_primary(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_identifier_expr(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_number_expr(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_paren_epxr(std::vector<Token>::iterator it, std::vector<Token>::iterator end);
+
 
 // Implementations
 // ---------------
@@ -70,5 +77,51 @@ std::tuple<std::unique_ptr<PrototypeAST>, std::vector<Token>::iterator> parse_pr
 }
 
 std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_expression(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
-	
+	auto LHS = parse_primary(it, end);
+	if (!std::get<0>(LHS)) return std::make_tuple(nullptr, it);
+	return parse_bin_op_RHS(it, end, 0, std::move(std::get<0>(LHS)));
+}
+
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_bin_op_RHS(std::vector<Token>::iterator it, std::vector<Token>::iterator end, int expr_precedence,  std::unique_ptr<ExprAST> LHS) {
+	while (true) {
+		int precedence = get_token_precedence(it);
+		if (precedence < expr_precedence) return make_tuple(std::move(LHS), it);
+
+		Token op = *it++;
+
+		auto RHS = parse_primary(it, end);
+		if (!std::get<0>(RHS)) return std::make_tuple(nullptr, it);
+
+		int next_precedence = get_token_precedence(it);
+		if (precedence < next_precedence) {
+			RHS = parse_bin_op_RHS(it, end, precedence + 1, std::get<0>(std::move(RHS)));
+			if (!std::get<0>(RHS)) return std::make_tuple(nullptr, it);
+		}
+
+		LHS = std::make_unique<BinaryExprAst>(op, std::move(LHS), std::move(std::get<0>(RHS)));
+	}
+}
+
+int get_token_precedence(std::vector<Token>::iterator it) {
+	static std::map<char, int> BinopPrecedence;
+	BinopPrecedence['<'] = 10;
+	BinopPrecedence['+'] = 20;
+	BinopPrecedence['-'] = 20;
+	BinopPrecedence['*'] = 40;
+
+	if (!isascii((*it).literal.c_str()[0])) return -1;
+
+	int precedence = BinopPrecedence[(*it).literal.c_str()[0]];
+	if (precedence <= 0) return -1;
+	return precedence;
+}
+
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_primary(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
+	if ((*it).type == tok_identifier) return parse_identifier_expr(it, end);
+	if ((*it).type == tok_number)     return parse_number_expr(it, end);
+	if ((*it).literal == "(")         return parse_paren_epxr(it, end);
+	else {
+		std::cout << "Unknown token when expecting expression" << '\n';
+		return std::make_tuple(nullptr, it);
+	}
 }
