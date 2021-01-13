@@ -125,3 +125,33 @@ std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_primary
 		return std::make_tuple(nullptr, it);
 	}
 }
+
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_identifier_expr(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
+	std::string id = (*it++).literal;
+
+	// Simple variable use
+	if ((*it).literal != "(") return std::make_tuple(std::make_unique<VariableExprAST>(id), it);
+
+	// Call
+	it++; // It the "("
+	std::vector<std::unique_ptr<ExprAST>> args;
+	if ((*it).literal != ")") {
+		while (true) {
+			auto arg = parse_expression(it, end);
+			if (std::get<0>(arg)) args.push_back(std::move(std::get<0>(arg)));
+			else                  return std::make_tuple(nullptr, it);
+			it = std::get<1>(arg);
+
+			if ((*it).literal == ")") break;
+			if ((*it).literal != "," ) {
+				std::cout << "Expected ','" << '\n';
+				return std::make_tuple(nullptr, it);
+			}
+			it++;
+		}
+	}
+
+	it++; // Eat the ")"
+
+	return std::make_tuple(std::make_unique<CallExprAST>(id, std::move(args)), it);
+}

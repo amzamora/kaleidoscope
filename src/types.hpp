@@ -55,9 +55,9 @@ struct BinaryExprAst : ExprAST {
 };
 
 struct CallExprAST : ExprAST {
-	Token callee;
+	std::string callee;
 	std::vector<std::unique_ptr<ExprAST>> args;
-	CallExprAST(Token callee, std::vector<std::unique_ptr<ExprAST>> args) : callee(callee), args(std::move(args)) {}
+	CallExprAST(std::string callee, std::vector<std::unique_ptr<ExprAST>> args) : callee(callee), args(std::move(args)) {}
 };
 
 struct PrototypeAST {
