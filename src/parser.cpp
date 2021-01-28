@@ -155,3 +155,21 @@ std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_identif
 
 	return std::make_tuple(std::make_unique<CallExprAST>(id, std::move(args)), it);
 }
+
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_number_expr(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
+	auto num = std::make_unique<NumberExprAst>((*it++).value);
+	return std::make_tuple(std::move(num), it);
+}
+
+std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_paren_epxr(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
+	it++; // eat (
+	auto expr = parse_expression(it, end);
+	if (!std::get<0>(expr)) return std::make_tuple(nullptr, it);
+
+	if ((*it).literal != ")") {
+		std::cout << "Expected ','" << '\n';
+		return std::make_tuple(nullptr, it);
+	}
+	it++;  // eat )
+	return std::make_tuple(std::move(std::get<0>(expr)), it);
+}
