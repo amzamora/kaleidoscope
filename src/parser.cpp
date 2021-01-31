@@ -33,9 +33,16 @@ std::unique_ptr<ProgramAST> parse(std::vector<Token> tokens) {
 				break;
 			}
 		}
+		else {
+			auto expr = parse_expression(it, tokens.end());
+			if (std::get<0>(expr)) {
+				expressions.push_back(std::move(std::get<0>(expr)));
+				it = std::get<1>(expr);
+			}
+		}
 	}
 
-	return nullptr;
+	return std::make_unique<ProgramAST>(std::move(functions), std::move(expressions));
 }
 
 std::tuple<std::unique_ptr<FunctionAST>, std::vector<Token>::iterator> parse_function(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
@@ -79,7 +86,7 @@ std::tuple<std::unique_ptr<PrototypeAST>, std::vector<Token>::iterator> parse_pr
 std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_expression(std::vector<Token>::iterator it, std::vector<Token>::iterator end) {
 	auto LHS = parse_primary(it, end);
 	if (!std::get<0>(LHS)) return std::make_tuple(nullptr, it);
-	return parse_bin_op_RHS(it, end, 0, std::move(std::get<0>(LHS)));
+	return parse_bin_op_RHS(std::get<1>(LHS), end, 0, std::move(std::get<0>(LHS)));
 }
 
 std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_bin_op_RHS(std::vector<Token>::iterator it, std::vector<Token>::iterator end, int expr_precedence,  std::unique_ptr<ExprAST> LHS) {
@@ -91,11 +98,13 @@ std::tuple<std::unique_ptr<ExprAST>, std::vector<Token>::iterator> parse_bin_op_
 
 		auto RHS = parse_primary(it, end);
 		if (!std::get<0>(RHS)) return std::make_tuple(nullptr, it);
+		it = std::get<1>(RHS);
 
 		int next_precedence = get_token_precedence(it);
 		if (precedence < next_precedence) {
 			RHS = parse_bin_op_RHS(it, end, precedence + 1, std::get<0>(std::move(RHS)));
 			if (!std::get<0>(RHS)) return std::make_tuple(nullptr, it);
+			it = std::get<1>(RHS);
 		}
 
 		LHS = std::make_unique<BinaryExprAst>(op, std::move(LHS), std::move(std::get<0>(RHS)));

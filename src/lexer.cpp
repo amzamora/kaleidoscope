@@ -50,6 +50,7 @@ tuple<optional<Token>, string::iterator> get_identifier(string::iterator it, str
 	else                 return make_tuple(Token(tok_identifier, lit), it);
 }
 
+#include <iostream>
 tuple<optional<Token>, string::iterator> get_integer(string::iterator it, string::iterator end) {
 	string lit = "";
 	while (it != end && (isdigit(*it) || *it == '.'))  {
@@ -57,5 +58,5 @@ tuple<optional<Token>, string::iterator> get_integer(string::iterator it, string
 		it++;
 	}
 	double value = strtod(lit.c_str(), nullptr);
-	return make_tuple(Token(tok_number, lit), it);
+	return make_tuple(Token(tok_number, lit, value), it);
 }
